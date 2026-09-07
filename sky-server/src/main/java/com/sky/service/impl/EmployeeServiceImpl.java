@@ -109,4 +109,19 @@ public void save(EmployeeDTO employeeDTO){
         return new PageResult(total,records);
     }
 
+    /**
+     * 启用禁用员工账号
+     * @param status
+     * @param id
+     */
+    @Override
+    public void startOrStop(Integer status, Long id) {
+        //mapper update status =?where id=?
+        //传一个实体类对象
+        Employee employee=new Employee();
+        employee.setStatus(status);
+        employee.setId(id);
+        employeeMapper.update(employee);
+
+    }
 }

@@ -34,4 +34,10 @@ void insert(Employee employee);
      * @return
      */
     Page<Employee> pageQuery(EmployeePageQueryDTO employeePageQueryDTO);
+
+    /**
+     * 根据主键动态修改主键
+     * @param employee
+     */
+    void update(Employee employee);
 }
