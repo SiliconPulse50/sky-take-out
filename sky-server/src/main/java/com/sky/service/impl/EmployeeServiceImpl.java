@@ -124,4 +124,26 @@ public void save(EmployeeDTO employeeDTO){
         employeeMapper.update(employee);
 
     }
+
+    /**
+     * 根据id查员工
+     * @param
+     * @return
+     */
+    public Employee getById(long id){
+        Employee employee=employeeMapper.getById(id);
+        employee.setPassword("****");
+        //employeeMapper.getById(id);
+    return employee;
+    }
+
+    public  void update(EmployeeDTO employeeDTO){
+        Employee employee=new Employee();
+        BeanUtils.copyProperties(employeeDTO,employee);
+        employee.setUpdateUser(BaseContext.getCurrentId());//底层
+        employee.setUpdateTime(LocalDateTime.now());
+        employeeMapper.update(employee);
+
+    }
+
 }

@@ -10,6 +10,9 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface EmployeeMapper {
 
+    //static Employee getById(long id) {
+   // }
+
     /**
      * 根据用户名查询员工
      * @param username
@@ -40,4 +43,8 @@ void insert(Employee employee);
      * @param employee
      */
     void update(Employee employee);
+
+    @Select("select * from employee where id=#{id}")
+    Employee getById(Long id);
+
 }

@@ -95,7 +95,7 @@ public class EmployeeController {
 
     //参数是query格式的，不是json
     @GetMapping("/page")
-    @ApiOperation("员工分页")
+    @ApiOperation("员工分页查询")
 
     public Result<PageResult>page(EmployeePageQueryDTO employeePageQueryDTO){
         log.info("员工分页查询，参数为：{}",employeePageQueryDTO);
@@ -110,6 +110,27 @@ public class EmployeeController {
         employeeService.startOrStop(status ,id);
         return Result.success();
     }
+    @ApiOperation("根据id查询员工信息")
+    @GetMapping("/{id}")
+    public Result<Employee>getById(@PathVariable long id){
+        Employee employee=employeeService.getById(id);
+        return Result.success(employee);
+    }
+
+    /**
+     *
+     * @param employeeDTO
+     * @return
+     */
+    @PutMapping
+    @ApiOperation ("编辑员工信息")
+
+    public Result update(@RequestBody EmployeeDTO employeeDTO){
+        log.info("编辑员工信息：{} ,employeeDTO");
+        employeeService.update(employeeDTO);
+        return Result.success();
+    }
+
 
 
 }
