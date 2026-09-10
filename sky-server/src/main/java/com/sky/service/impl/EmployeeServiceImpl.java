@@ -44,11 +44,11 @@ public void save(EmployeeDTO employeeDTO){
     BeanUtils.copyProperties(employeeDTO,employee);
 
     //设置账号的状态，默认正常状态
-    employee.setStatus(StatusConstant.ENABLE);
-    //设置默认密码
-    employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
-   employee.setCreateTime(LocalDateTime.now());
-   employee.setUpdateTime(LocalDateTime.now());
+//    employee.setStatus(StatusConstant.ENABLE);
+//    //设置默认密码
+//    employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
+//   employee.setCreateTime(LocalDateTime.now());
+//   employee.setUpdateTime(LocalDateTime.now());
    //ToDo 后期需要改为当前登录用户的id Day2已改
     //interceptor存入，service
    employee.setCreateUser(BaseContext.getCurrentId());
@@ -140,8 +140,8 @@ public void save(EmployeeDTO employeeDTO){
     public  void update(EmployeeDTO employeeDTO){
         Employee employee=new Employee();
         BeanUtils.copyProperties(employeeDTO,employee);
-        employee.setUpdateUser(BaseContext.getCurrentId());//底层
-        employee.setUpdateTime(LocalDateTime.now());
+//        employee.setUpdateUser(BaseContext.getCurrentId());//底层
+//        employee.setUpdateTime(LocalDateTime.now());
         employeeMapper.update(employee);
 
     }
