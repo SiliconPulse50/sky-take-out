@@ -4,3 +4,5 @@
 *.class
 *Test.java
 **/test/
+# OSS本地密钥配置，禁止提交github
+sky-server/src/main/resources/application-oss.yml

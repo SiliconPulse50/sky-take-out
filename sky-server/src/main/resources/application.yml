@@ -4,6 +4,7 @@ server:
 spring:
   profiles:
     active: dev
+    include: dev,oss # 同时加载dev和oss配置
   main:
     allow-circular-references: true
   datasource:
@@ -12,6 +13,14 @@ spring:
       url: jdbc:mysql://${sky.datasource.host}:${sky.datasource.port}/${sky.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
       username: ${sky.datasource.username}
       password: ${sky.datasource.password}
+
+
+
+
+
+
+
+
 
 mybatis:
   #mapper配置文件，保证可以扫描到配置文件 mapper/*.xml
@@ -30,6 +39,10 @@ logging:
         controller: info
 
 sky:
+
+  alioss:
+    endpoint: oss-cn-shenzhen.aliyuncs.com
+
   jwt:
     # 设置jwt签名加密时使用的秘钥
     admin-secret-key: itcast

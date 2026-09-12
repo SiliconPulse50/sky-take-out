@@ -52,6 +52,8 @@ public class CategoryServiceImpl implements CategoryService {
 //        category.setUpdateTime(LocalDateTime.now());
 //        category.setCreateUser(BaseContext.getCurrentId());
 //        category.setUpdateUser(BaseContext.getCurrentId());
+        // ★ 加这一行，验证代理
+        System.out.println("categoryMapper 的真实类型: " + categoryMapper.getClass().getName());
 
         categoryMapper.insert(category);
     }
@@ -62,6 +64,9 @@ public class CategoryServiceImpl implements CategoryService {
      * @return
      */
     public PageResult pageQuery(CategoryPageQueryDTO categoryPageQueryDTO) {
+        // ★ 加这一行
+        System.out.println("categoryMapper 的真实类型: " + categoryMapper.getClass().getName());
+
         PageHelper.startPage(categoryPageQueryDTO.getPage(),categoryPageQueryDTO.getPageSize());
         //下一条sql进行分页，自动加入limit关键字分页
         Page<Category> page = categoryMapper.pageQuery(categoryPageQueryDTO);
