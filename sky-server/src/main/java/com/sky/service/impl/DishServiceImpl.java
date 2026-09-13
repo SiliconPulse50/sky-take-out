@@ -26,16 +26,18 @@ public class DishServiceImpl implements DishService {
     private DishFlavorMapper dishFlavorMapper;
 
     @Transactional
+    //两张表同生共死DTO->实体，同名属性直接搬
     public void savewithflavor(DishDTO dishDTO){
         Dish dish = new Dish();
         BeanUtils.copyProperties(dishDTO ,dish);
 
         dishMapper.insert(dish);
-        Long dishId=dish.getId();
+        Long dishId=dish.getId();//拿回填的自增id
 
         List<DishFlavor>flavors=dishDTO.getFlavors();
         if(flavors !=null && flavors.size()>0){
             flavors.forEach(dishFlavor ->{
+                //给子表补外键
                 dishFlavor.setDishId(dishId);
 
             } );
