@@ -28,8 +28,11 @@ public class DishServiceImpl implements DishService {
     @Transactional
     //两张表同生共死DTO->实体，同名属性直接搬
     public void savewithflavor(DishDTO dishDTO){
+        //向菜品表加入一条
         Dish dish = new Dish();
         BeanUtils.copyProperties(dishDTO ,dish);
+        //新增语义:主键必须由数据库分配,防止前端误传 id 变成"显式指定主键"
+        dish.setId(null);
 
         dishMapper.insert(dish);
         Long dishId=dish.getId();//拿回填的自增id
@@ -49,3 +52,5 @@ public class DishServiceImpl implements DishService {
 
     }
 }
+/*:先插菜拿到 id,再插口味。@Transactional 生效还有个前提:它是通过
+Spring 代理调用的(Controller 注入接口调用,"自己调自己"会导致事务失效)。*/
