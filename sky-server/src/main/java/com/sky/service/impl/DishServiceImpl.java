@@ -11,8 +11,11 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -37,14 +40,20 @@ public class DishServiceImpl implements DishService {
         dishMapper.insert(dish);
         Long dishId=dish.getId();//拿回填的自增id
 
-        List<DishFlavor>flavors=dishDTO.getFlavors();
-        if(flavors !=null && flavors.size()>0){
-            flavors.forEach(dishFlavor ->{
+        //过滤掉前端漏选的空口味(否则库里会出现 name='' 的脏数据)
+        List<DishFlavor> flavors = CollectionUtils.isEmpty(dishDTO.getFlavors())
+                ? Collections.emptyList()
+                : dishDTO.getFlavors().stream()
+                        .filter(f -> f.getName() != null && !f.getName().trim().isEmpty())
+                        .collect(Collectors.toList());
+
+        if (!CollectionUtils.isEmpty(flavors)) {
+            flavors.forEach(dishFlavor -> {
                 //给子表补外键
                 dishFlavor.setDishId(dishId);
 
-            } );
-        //向口味表里插入n调数据
+            });
+            //向口味表里插入n条数据
             dishFlavorMapper.insertBatch(flavors);
         }
 
