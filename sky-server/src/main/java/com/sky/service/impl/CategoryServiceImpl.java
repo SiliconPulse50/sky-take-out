@@ -70,6 +70,8 @@ public class CategoryServiceImpl implements CategoryService {
         PageHelper.startPage(categoryPageQueryDTO.getPage(),categoryPageQueryDTO.getPageSize());
         //下一条sql进行分页，自动加入limit关键字分页
         Page<Category> page = categoryMapper.pageQuery(categoryPageQueryDTO);
+        //组装返回
+        //page.getTotal()总数，getResult()当前页数据
         return new PageResult(page.getTotal(), page.getResult());
     }
 

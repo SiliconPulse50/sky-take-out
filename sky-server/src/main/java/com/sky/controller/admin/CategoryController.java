@@ -50,6 +50,8 @@ public class CategoryController {
         PageResult pageResult = categoryService.pageQuery(categoryPageQueryDTO);
         return Result.success(pageResult);
     }
+    //不要@responseBody分页是get请求，参数在URL 的query string 里面，spring会按属性绑到DTO，
+    // @requestBody 是给json 请求体使用的，加载这里会400
 
     /**
      * 删除分类
