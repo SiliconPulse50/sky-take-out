@@ -11,17 +11,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * 菜品管理
  */
 @RestController
 @Api(tags="菜品相关接口")
-@RequestMapping
+@RequestMapping("/admin/dish")     // ★ 类级统一前缀(和 CategoryController 一致)
 @Slf4j
 public class DishController {
    @Autowired
    private DishService dishService;
-   @PostMapping("/admin/dish")
+   @PostMapping                     // ★ 去掉 "/admin/dish",否则会变成 /admin/dish/admin/dish
    @ApiOperation("新增菜品")
     public Result save( @RequestBody DishDTO  dishDTO){
         log.info("新增菜品",dishDTO);
@@ -41,7 +43,14 @@ public class DishController {
         PageResult pageResult = dishService.pageQuery(dishPageQueryDTO);
         return Result.success(pageResult);
     }
-
+    @DeleteMapping
+    @ApiOperation("菜品的批量删除")
+    public Result DELETE( @RequestParam List<Long> ids){
+        //spring mvc List<Long>,帮助解析，，原来是String ids
+        log.info("菜品的批量删除: {}",ids);
+        dishService.deleteBatch(ids);
+        return Result.success();
+    }
 
 
 
