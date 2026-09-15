@@ -15,8 +15,10 @@ import com.sky.mapper.SetmealDishMapper;
 import com.sky.result.PageResult;
 import com.sky.service.DishService;
 import com.sky.vo.DishVO;
+import lombok.val;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -117,6 +119,39 @@ public class DishServiceImpl implements DishService {
             dishMapper.deleteById(id);
         }
     }
+    /**
+     *
+     * 根据id来查询菜品和口味
+     * @param id
+     * @return
+     */
+
+    public DishVO getByIdwithFlavor(Long id){
+        Dish dish=dishMapper.getById(id);
+        List<DishFlavor> dishFlavors=dishFlavorMapper.getByDishId(id);
+        DishVO dishVO=new DishVO();
+        BeanUtils.copyProperties(dish,dishVO);
+        dishVO.setFlavors(dishFlavors);
+        return dishVO ;
+    }
+    /**
+     * 根据id修改菜品基本信息和其对应的口味信息
+     */
+    public void updatewithFlavor(DishDTO dishDTO){
+        //口味这么多怎么修改呢
+        Dish dish=new Dish();
+        BeanUtils.copyProperties(dishDTO,dish);
+         dishMapper.update(dish);//用dish比用dishdto 更加合理因为dishDTO里面包含flavor的信息，所以不用直接用dish即可
+        //修改菜品基本信息
+        dishFlavorMapper.deleteByDishId(dishDTO.getId());
+        //先删除再插入
+        List<DishFlavor> flavors = dishDTO.getFlavors();
+        dishFlavorMapper.insertBatch(flavors);
+
+
+    }
+
+
 }
 /*:先插菜拿到 id,再插口味。@Transactional 生效还有个前提:它是通过
 Spring 代理调用的(Controller 注入接口调用,"自己调自己"会导致事务失效)。*/
