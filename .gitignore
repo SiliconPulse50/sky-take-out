@@ -6,3 +6,5 @@
 **/test/
 # OSS本地密钥配置，禁止提交github
 sky-server/src/main/resources/application-oss.yml
+# 本地数据库/Redis 配置（含明文密码），禁止提交；模板见 application-dev.yml.example
+sky-server/src/main/resources/application-dev.yml

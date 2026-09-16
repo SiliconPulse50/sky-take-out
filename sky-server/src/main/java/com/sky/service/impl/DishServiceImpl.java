@@ -144,7 +144,7 @@ public class DishServiceImpl implements DishService {
     /**
      * 根据id修改菜品基本信息和其对应的口味信息
      */
-    @Transactional
+  /*  @Transactional
     public void updatewithFlavor(DishDTO dishDTO){
         //口味这么多怎么修改呢
         Dish dish=new Dish();
@@ -156,10 +156,36 @@ public class DishServiceImpl implements DishService {
         //先删除再插入
         List<DishFlavor> flavors = dishDTO.getFlavors();
         dishFlavorMapper.insertBatch(flavors);
+  }
+  缺的第一件:没给口味补 dishId
 
+你在编辑页新加的口味(点"添加口味"再选名字),前端只发 {name, value},没有 dishId;
+插库时 dish_flavor.dish_id 就是 NULL,而这一列是 NOT NULL → 报 Column 'dish_id' cannot be null(1048);
+现在有了 @Transactional,整笔会回滚 → 前端提示"修改失败",菜品也改不了。
+(从数据库里读出来的老口味自带 dishId,所以只改现有口味时能过 —— 这就是为什么它时好时坏。)
+缺的第二件:没过滤空集合
 
+你如果把口味全部删掉再保存,flavors 就是空集合 → <foreach> 什么都不生成 → SQL 变成 insert into dish_flavor(dish_id,name,value) VALUES(VALUES 后面空白)→ 语法错误。*/
+    @Transactional
+    public void updatewithFlavor(DishDTO dishDTO){
+        Dish dish = new Dish();
+        BeanUtils.copyProperties(dishDTO, dish);
+        dishMapper.update(dish);                                  // 改主表
+
+        dishFlavorMapper.deleteByDishId(dishDTO.getId());         // 旧口味全删
+
+        // 和 savewithflavor 同一个套路,只是 id 来源不同(修改时来自 DTO)
+        List<DishFlavor> flavors = CollectionUtils.isEmpty(dishDTO.getFlavors())
+                ? Collections.emptyList()
+                : dishDTO.getFlavors().stream()
+                .filter(f -> f.getName() != null && !f.getName().trim().isEmpty())
+                .collect(Collectors.toList());
+
+        if (!CollectionUtils.isEmpty(flavors)) {
+            flavors.forEach(f -> f.setDishId(dishDTO.getId()));   // ★ 关键:补外键
+            dishFlavorMapper.insertBatch(flavors);
+        }
     }
-
 
 }
 /*:先插菜拿到 id,再插口味。@Transactional 生效还有个前提:它是通过
