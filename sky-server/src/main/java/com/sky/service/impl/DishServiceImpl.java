@@ -15,6 +15,7 @@ import com.sky.mapper.SetmealDishMapper;
 import com.sky.result.PageResult;
 import com.sky.service.DishService;
 import com.sky.vo.DishVO;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 
 
 @Service
+@Slf4j
 public class DishServiceImpl implements DishService {
     /**
      * 新增菜品和他对应的口味
@@ -40,6 +42,8 @@ public class DishServiceImpl implements DishService {
     @Autowired
     private SetmealDishMapper setmealDishMapper;
 
+
+   
     @Transactional
     //两张表同生共死DTO->实体，同名属性直接搬
     public void savewithflavor(DishDTO dishDTO){
@@ -48,8 +52,10 @@ public class DishServiceImpl implements DishService {
         BeanUtils.copyProperties(dishDTO ,dish);
         //新增语义:主键必须由数据库分配,防止前端误传 id 变成"显式指定主键"
         dish.setId(null);
-
-        dishMapper.insert(dish);
+        //强制清空
+        dishMapper.insert(dish);//执行mysql，得到分配的id
+        // 在 savewithflavor 的 insert 之后临时加一行
+        //log.info("回填 id = {}, DTO 里的 id = {}", dish.getId(), dishDTO.getId());
         Long dishId=dish.getId();//拿回填的自增id
 
         //过滤掉前端漏选的空口味(否则库里会出现 name='' 的脏数据)
@@ -58,7 +64,8 @@ public class DishServiceImpl implements DishService {
                 : dishDTO.getFlavors().stream()
                         .filter(f -> f.getName() != null && !f.getName().trim().isEmpty())
                         .collect(Collectors.toList());
-
+/*
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" >mybatis依靠这个把数据库生成的值回填回dish对象*/
         if (!CollectionUtils.isEmpty(flavors)) {
             flavors.forEach(dishFlavor -> {
                 //给子表补外键
@@ -137,9 +144,11 @@ public class DishServiceImpl implements DishService {
     /**
      * 根据id修改菜品基本信息和其对应的口味信息
      */
+    @Transactional
     public void updatewithFlavor(DishDTO dishDTO){
         //口味这么多怎么修改呢
         Dish dish=new Dish();
+        //DTO里面的id已经被拷贝过去了
         BeanUtils.copyProperties(dishDTO,dish);
          dishMapper.update(dish);//用dish比用dishdto 更加合理因为dishDTO里面包含flavor的信息，所以不用直接用dish即可
         //修改菜品基本信息
