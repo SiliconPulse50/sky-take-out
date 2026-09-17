@@ -16,12 +16,9 @@ public class RedisConfiguration {
         RedisTemplate redisTemplate=new RedisTemplate() ;
         //可以设计Redis的连接工厂对象
         redisTemplate.setConnectionFactory(redisConnectionFactory);
-        //设置key的序列化器
-        // RedisConfiguration 里补三行(否则在客户端看到的是二进制乱码)
+        //设置key的序列化器（按课程原版:只设 key;value 走默认序列化器,才能存 Integer/对象等任意类型）
         redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new StringRedisSerializer());      // ★
-        redisTemplate.setHashKeySerializer(new StringRedisSerializer());    // ★
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());  // ★
+        //key只收String
         return redisTemplate;
     }
 }
