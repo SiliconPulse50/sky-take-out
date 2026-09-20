@@ -12,7 +12,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserLoginVO implements Serializable {
-
+    //和返回对应
     private Long id;
     private String openid;
     private String token;
