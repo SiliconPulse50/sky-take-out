@@ -36,7 +36,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
     private JwtTokenUserInterceptor jwtTokenUserInterceptor;
     /**
      * 注册自定义拦截器
-     *
+     * @Component 让拦截器成为 Bean(能被注入),但只有在这里注册,它才会挂到请求链上。
      * @param registry
      */
     protected void addInterceptors(InterceptorRegistry registry) {
@@ -55,6 +55,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
      * 通过knife4j生成接口文档
      * @return
      */
+    //分组一：管理端
     @Bean
     public Docket docket1() {
         ApiInfo apiInfo = new ApiInfoBuilder()
@@ -70,7 +71,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 .paths(PathSelectors.any())
                 .build();
         return docket;
-    }
+    }//分组2：用户端
     @Bean
     public Docket docket2() {
         ApiInfo apiInfo = new ApiInfoBuilder()
@@ -99,7 +100,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
         registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
     }
     /**
-     * 扩展 MVC 的消息转化器
+     * 扩展 MVC 的消息转化器，统一json的输出格式 特别是localdatatime
      */
     protected void extendMessageConverters(List<HttpMessageConverter<?>> converters){
         log.info("扩展消息转化器");
@@ -109,7 +110,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
         converter.setObjectMapper(new JacksonObjectMapper());
         //将自己的消息转化器加入到容器中
-        converters.add(0,converter);
+        converters.add(0,converter);//<-放到最前面优先使用
     }
 
 }
