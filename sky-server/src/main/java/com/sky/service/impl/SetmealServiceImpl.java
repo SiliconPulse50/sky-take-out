@@ -85,4 +85,45 @@ public class SetmealServiceImpl implements SetmealService {
 
 
     }
+
+    /**
+     * 回显VO,多表拼装
+     * @param id
+     * @return
+     */
+    @Override
+    public SetmealVO getByIdWithDish(Long id){
+        Setmeal setmeal = setmealMapper.getById(id);//查主表
+        List<SetmealDish> setmealDishes = setmealDishMapper.getBySetmealId(id);
+                //  查子表
+        SetmealVO setmealVO = new SetmealVO();               // ★ SetmealVO 里正好有 setmealDishes 字段
+        BeanUtils.copyProperties(setmeal, setmealVO);//主表字段搬过去
+        setmealVO.setSetmealDishes(setmealDishes);//子表列表装进去
+        return setmealVO;                                    // ★ 返回 VO
+    }
+
+    /**
+     * 修改 -4步+事务
+     * @param setmealDTO
+     */
+    @Override
+    @Transactional
+    public void update(SetmealDTO setmealDTO){
+        Setmeal setmeal=new Setmeal();
+        BeanUtils.copyProperties(setmealDTO,setmeal);
+
+        setmealMapper.update(setmeal);
+
+        Long setmealId=setmealDTO.getId();
+        // 删掉旧的关系全部
+        setmealDishMapper.deleteBySetmealId(setmealId);
+        // 给关系补充外键，整批插入
+       List<SetmealDish> setmealDishes = setmealDTO.getSetmealDishes();
+       if (setmealDishes != null && setmealDishes.size() > 0) {  //  补判断
+           setmealDishes.forEach(sd -> sd.setSetmealId(setmealId));   //  后端补外键(你写对了 ✓)
+           setmealDishMapper.insertBatch(setmealDishes);
+       }
+
+   }
+
 }
