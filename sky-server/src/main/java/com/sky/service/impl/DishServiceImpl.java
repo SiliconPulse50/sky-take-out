@@ -217,7 +217,6 @@ public class DishServiceImpl implements DishService {
         return dishMapper.list(dish);
     }
 
-
 }
 /*:先插菜拿到 id,再插口味。@Transactional 生效还有个前提:它是通过
 Spring 代理调用的(Controller 注入接口调用,"自己调自己"会导致事务失效)。*/
