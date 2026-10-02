@@ -3,6 +3,7 @@ package com.sky.mapper;
 import com.sky.entity.OrderDetail;
 import com.sky.entity.Orders;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -15,4 +16,9 @@ public interface OrderMapper {
     void insert(Orders orders);
 
 
+    Orders getByNumber(String outTradeNo);
+
+    void update(Orders orders);
+
+    Orders getByNumberAndUserId(@Param("orderNumber")String orderNumber,@Param("userId") Long userId);
 }

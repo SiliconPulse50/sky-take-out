@@ -1,22 +1,23 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
-import com.sky.entity.AddressBook;
-import com.sky.entity.OrderDetail;
-import com.sky.entity.Orders;
-import com.sky.entity.ShoppingCart;
+import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
+import com.sky.exception.OrderBusinessException;
 import com.sky.exception.ShoppingCartBusinessException;
-import com.sky.mapper.AddressBookMapper;
-import com.sky.mapper.OrderDetailMapper;
-import com.sky.mapper.OrderMapper;
-import com.sky.mapper.ShoppingCartMapper;
+import com.sky.mapper.*;
 import com.sky.service.OrderService;
+import com.sky.utils.WeChatPayUtil;
+import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
 public class OrderServiceImpl implements OrderService {
     @Autowired
     private OrderMapper orderMapper;
@@ -34,6 +36,11 @@ public class OrderServiceImpl implements OrderService {
     private AddressBookMapper addressBookMapper;
     @Autowired
     private ShoppingCartMapper shoppingCartMapper;
+    @Value("${sky.wechat.mock-pay:true}")
+    private boolean mockPay;
+    @Autowired private UserMapper userMapper;      // ★ 新增(真实支付分支要用 openid)
+    @Autowired private WeChatPayUtil weChatPayUtil;// ★ 新增
+    //@Value("${sky.wechat.mock-pay:true}")          // ★ 新增:默认 true,没配也能跑
     /**
      * 用户下单
      * @param ordersSubmitDTO
@@ -89,6 +96,64 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         return orderSubmitVO;
+    }
+    @Override
+    public void paySuccess(String outTradeNo) {
+        Orders ordersDB = orderMapper.getByNumber(outTradeNo);
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())                    // 更新必须带 id
+                .status(Orders.TO_BE_CONFIRMED)          // 2 = 待接单
+                .payStatus(Orders.PAID)                  // 1 = 已支付
+                .checkoutTime(LocalDateTime.now())       // 结账时间
+                .build();
+        orderMapper.update(orders);
+        log.info("订单 {} 支付成功,状态改为待接单", outTradeNo);
+    }
+    /**
+     * 订单支付
+     */
+
+    @Override
+    public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
+        Long userId = BaseContext.getCurrentId();
+        String orderNumber = ordersPaymentDTO.getOrderNumber();
+
+        // ① 先确认这笔订单确实是"当前登录用户"的(防止拿别人的订单号来支付)
+        Orders ordersDB = orderMapper.getByNumberAndUserId(orderNumber, userId);
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        // ② 【模拟支付分支】没有商户号时走这里
+        if (mockPay) {
+            log.info("【模拟支付】订单号:{} 金额:{}", orderNumber, ordersDB.getAmount());
+            paySuccess(orderNumber);                   // 复用"支付成功"逻辑
+            return OrderPaymentVO.builder().build();   // 返回空对象(不动就返回 null 也行)
+        }
+
+        // ③ 【真实微信支付分支】需要 mchid + 证书 + apiV3Key + 公网可访问的回调地址
+        User user = userMapper.getById(userId);
+        JSONObject jsonObject = weChatPayUtil.pay(
+                orderNumber,                            // 商户订单号
+                ordersDB.getAmount(),                   // 真实金额(单位:元)
+                "苍穹外卖订单",                           // 商品描述
+                user.getOpenid()                        // 支付用户的 openid
+        );
+
+        if (jsonObject.getString("prepay_id") == null) {
+            throw new OrderBusinessException("微信下单失败:" + jsonObject.toJSONString());
+        }
+
+        return OrderPaymentVO.builder()
+                .nonceStr(jsonObject.getString("nonceStr"))
+                .paySign(jsonObject.getString("paySign"))
+                .timeStamp(jsonObject.getString("timeStamp"))
+                .signType(jsonObject.getString("signType"))
+                .packageStr(jsonObject.getString("package"))    // ★ 注意:工具类返回的键叫 package
+                .build();
     }
 
 }
