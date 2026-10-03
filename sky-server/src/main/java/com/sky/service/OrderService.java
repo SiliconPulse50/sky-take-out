@@ -45,4 +45,5 @@ public interface OrderService {
      */
     OrderVO details(Long id);
 
+    void userCancelById(Long id) throws Exception;
 }
