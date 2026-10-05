@@ -58,5 +58,13 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
             response.setStatus(401);
             return false;
         }
+
+    }
+    /**
+     * 请求结束后清理 ThreadLocal，避免线程池复用导致身份残留
+     */
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        BaseContext.removeCurrentId();
     }
 }
