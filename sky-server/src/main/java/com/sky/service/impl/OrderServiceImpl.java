@@ -106,11 +106,20 @@ public class OrderServiceImpl implements OrderService {
 
         return orderSubmitVO;
     }
+    /*
+     * 支付成功:把订单改成"已支付 + 待接单"
+     * 模拟支付和微信回调都调它 —— 这就是"同一段业务逻辑只写一次"
+     */
     @Override
     public void paySuccess(String outTradeNo) {
         Orders ordersDB = orderMapper.getByNumber(outTradeNo);
         if (ordersDB == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        // 已经付过了就直接返回 —— 幂等保护(便宜、有效)
+        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
+            log.info("订单 {} 已支付过,忽略重复回调", outTradeNo);
+            return;
         }
         Orders orders = Orders.builder()
                 .id(ordersDB.getId())                    // 更新必须带 id
@@ -130,20 +139,20 @@ public class OrderServiceImpl implements OrderService {
         Long userId = BaseContext.getCurrentId();
         String orderNumber = ordersPaymentDTO.getOrderNumber();
 
-        // ① 先确认这笔订单确实是"当前登录用户"的(防止拿别人的订单号来支付)
+        // 先确认这笔订单确实是"当前登录用户"的(防止拿别人的订单号来支付)
         Orders ordersDB = orderMapper.getByNumberAndUserId(orderNumber, userId);
         if (ordersDB == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
 
-        // ② 【模拟支付分支】没有商户号时走这里
+        // 【模拟支付分支】没有商户号时走这里
         if (mockPay) {
             log.info("【模拟支付】订单号:{} 金额:{}", orderNumber, ordersDB.getAmount());
             paySuccess(orderNumber);                   // 复用"支付成功"逻辑
             return OrderPaymentVO.builder().build();   // 返回空对象(不动就返回 null 也行)
         }
 
-        // ③ 【真实微信支付分支】需要 mchid + 证书 + apiV3Key + 公网可访问的回调地址
+        // 【真实微信支付分支】需要 mchid + 证书 + apiV3Key + 公网可访问的回调地址
         User user = userMapper.getById(userId);
         JSONObject jsonObject = weChatPayUtil.pay(
                 orderNumber,                            // 商户订单号
@@ -161,7 +170,7 @@ public class OrderServiceImpl implements OrderService {
                 .paySign(jsonObject.getString("paySign"))
                 .timeStamp(jsonObject.getString("timeStamp"))
                 .signType(jsonObject.getString("signType"))
-                .packageStr(jsonObject.getString("package"))    // ★ 注意:工具类返回的键叫 package
+                .packageStr(jsonObject.getString("package"))    // 注意:工具类返回的键叫 package
                 .build();
     }
 
@@ -191,7 +200,7 @@ public class OrderServiceImpl implements OrderService {
             for (Orders orders : page) {
                 Long orderId = orders.getId();// 订单id
 
-                // 查询订单明细
+                // 查询订单明细,N+1查询问题
                 List<OrderDetail> orderDetails = orderDetailMapper.getByOrderId(orderId);
 
                 OrderVO orderVO = new OrderVO();
@@ -301,7 +310,10 @@ public class OrderServiceImpl implements OrderService {
 
        // 根据订单id查询当前订单详情
        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(id);
-
+       // 加判断:既防 1064,又挡住"拿别人的订单 id 再来一单"
+       if (orderDetailList == null || orderDetailList.isEmpty()) {
+           throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+       }
        // 将订单详情对象转换为购物车对象
        List<ShoppingCart> shoppingCartList = orderDetailList.stream().map(x -> {
            ShoppingCart shoppingCart = new ShoppingCart();
