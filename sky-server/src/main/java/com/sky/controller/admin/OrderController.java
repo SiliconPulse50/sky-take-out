@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @Api(tags = "订单管理接口")
 public class OrderController {
-
     @Autowired
     private OrderService orderService;
 
