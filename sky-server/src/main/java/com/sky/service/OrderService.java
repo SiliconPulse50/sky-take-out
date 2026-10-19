@@ -62,4 +62,10 @@ public interface OrderService {
     PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO);
 
     OrderStatisticsVO statistics();
+
+    /**
+     * 客户催单
+     * @param id
+     */
+    void reminder(Long id);
 }

@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
@@ -20,6 +21,7 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +33,9 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,8 +51,9 @@ public class OrderServiceImpl implements OrderService {
     private ShoppingCartMapper shoppingCartMapper;
     @Value("${sky.wechat.mock-pay:true}")
     private boolean mockPay;
-    @Autowired private UserMapper userMapper;      // ★ 新增(真实支付分支要用 openid)
-    @Autowired private WeChatPayUtil weChatPayUtil;// ★ 新增
+    @Autowired private UserMapper userMapper;      //  新增(真实支付分支要用 openid)
+    @Autowired private WeChatPayUtil weChatPayUtil;//  新增
+    @Autowired private WebSocketServer webSocketServer;
     //@Value("${sky.wechat.mock-pay:true}")          // ★ 新增:默认 true,没配也能跑
     /**
      * 用户下单
@@ -129,11 +134,18 @@ public class OrderServiceImpl implements OrderService {
                 .build();
         orderMapper.update(orders);
         log.info("订单 {} 支付成功,状态改为待接单", outTradeNo);
-    }
-    /*
-     * 订单支付
-     */
 
+        //通知商家端有新的待接单订单
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", 1);                    // 1 来单提醒  2 客户催单
+        map.put("orderId", ordersDB.getId());
+        map.put("content", "订单号：" + ordersDB.getNumber());
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
+    }
+
+     /*
+      * 订单支付
+      */
     @Override
     public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
         Long userId = BaseContext.getCurrentId();
@@ -398,6 +410,23 @@ public class OrderServiceImpl implements OrderService {
         orderStatisticsVO.setConfirmed(confirmed);
         orderStatisticsVO.setDeliveryInProgress(deliveryInProgress);
         return orderStatisticsVO;
+    }
+    public void reminder(Long id){
+        // 根据id查询订单
+        Orders ordersDB = orderMapper.getById(id);
+
+        // 校验订单是否存在
+        Long userId =BaseContext.getCurrentId();
+        if (ordersDB == null ||!userId.equals(ordersDB.getUserId())) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        Map  map=new HashMap();
+        map.put("type",2);
+        map.put("orderId",id);
+        map.put("content","订单号"+ordersDB.getNumber());
+        //推送消息
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
+
     }
 
 
